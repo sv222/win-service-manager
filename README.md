@@ -10,6 +10,8 @@
 
 Windows Service Manager is a powerful TUI (Terminal User Interface) replacement for the traditional Windows Services management console (`services.msc`). Built with Go and the elegant Bubble Tea framework, it provides a modern, keyboard-driven interface for managing Windows services efficiently.
 
+![Windows Service Manager TUI — lazydocker-style layout](docs/screenshoot.png)
+
 ## ✨ Features
 
 ### 🎯 Core Service Management
@@ -19,8 +21,9 @@ Windows Service Manager is a powerful TUI (Terminal User Interface) replacement 
 - **Detailed service information** including PID, startup type, and dependencies
 - **Administrator privilege handling** with graceful error management
 
-### 🎨 Modern Terminal Interface  
-- **Beautiful TUI** styled with Lip Gloss
+### 🎨 Modern Terminal Interface
+- **Lazydocker-style TUI** with filter sidebar, service table, and live details pane
+- **Automatic UAC elevation** on startup (like `sudo`), with `-no-elevate` opt-out
 - **Vim-style navigation** for efficient keyboard control
 - **Responsive design** that adapts to terminal size
 - **Color-coded status indicators** for quick visual feedback
@@ -35,26 +38,55 @@ Windows Service Manager is a powerful TUI (Terminal User Interface) replacement 
 
 ### Prerequisites
 - Windows 10 or 11
-- Administrator privileges (recommended for service control operations)
+- Administrator privileges for service changes (the app requests them automatically via UAC)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/sv222/win-service-manager.git
+git clone https://github.com/rifqiabd/win-service-manager.git
 cd win-service-manager
 
 # Build the executable
 go build -o win-service-manager.exe .
 ```
 
+### Scoop
+
+```powershell
+scoop bucket add rifqiabd https://github.com/rifqiabd/scoop-bucket
+scoop install rifqiabd/win-service-manager
+wsm -version
+```
+
+To update or remove the application:
+
+```powershell
+scoop update win-service-manager
+scoop uninstall win-service-manager
+```
+
+The application is portable and does not install a Windows service. On startup it requests administrator privileges through the UAC prompt. Use `-no-elevate` to browse services without elevation.
+
+### Creating a Release
+
+Create and push a semantic version tag from the fork repository. GitHub Actions builds a Windows amd64 ZIP archive and publishes it as a GitHub Release.
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
 ### Usage
 ```bash
-# Run with default settings
+# Run with default settings (prompts for UAC)
 .\win-service-manager.exe
 
 # Use custom configuration
 .\win-service-manager.exe -config myconfig.yaml
+
+# Browse without the UAC prompt
+.\win-service-manager.exe -no-elevate
 
 # Enable debug logging
 .\win-service-manager.exe -log-level debug
@@ -67,15 +99,16 @@ go build -o win-service-manager.exe .
 |-----|--------|
 | `j` / `↓` | Move down |
 | `k` / `↑` | Move up |
-| `g` | Go to top |
-| `G` | Go to bottom |
-| `n` / `PgDn` | Next page |
-| `p` / `PgUp` | Previous page |
+| `g` / `G` | Go to top / bottom |
+| `n` / `PgDn` | Page down |
+| `p` / `PgUp` | Page up |
+| `Tab` / `←` / `→` | Switch focus between services and filters |
+| `1` - `6` | Jump directly to a filter |
 
 ### Service Actions
 | Key | Action |
 |-----|--------|
-| `Enter` | View service details |
+| `Enter` | Open service details |
 | `s` | Start service |
 | `t` | Stop service |
 | `m` | Change startup type |
@@ -84,19 +117,19 @@ go build -o win-service-manager.exe .
 | Key | Action |
 |-----|--------|
 | `w` / `F5` | Refresh services |
-| `f` | Cycle filter (All/Running/Stopped/Manual/Disabled/Automatic) |
-| `/` | Enter search mode |
-| `h` / `?` | Toggle help panel |
+| `f` | Cycle filter (All/Running/Stopped/Automatic/Manual/Disabled) |
+| `/` | Live search |
+| `h` / `?` | Toggle help |
 | `Esc` | Go back / Clear search |
 | `q` / `Ctrl+C` | Quit |
 
 ### Search Mode
 | Key | Action |
 |-----|--------|
-| `Enter` | Apply search and exit search mode |
-| `Esc` | Exit search mode without applying |
+| `Enter` | Keep search and exit search mode |
+| `Esc` | Exit search mode and clear the query |
 | `Backspace` | Delete last character |
-| Any letter/number | Add to search term |
+| Any letter/number | Filter the list live as you type |
 
 ## ⚙️ Configuration
 
@@ -155,7 +188,8 @@ win-service-manager/
 
 ## 🔒 Security
 
-- Handles administrator privileges gracefully
+- Requests administrator privileges through the Windows UAC prompt on startup
+- `-no-elevate` allows read-only browsing without elevation
 - Operations execute immediately for efficiency
 - Safe service operation timeouts
 - Comprehensive error handling and logging
@@ -165,7 +199,12 @@ win-service-manager/
 ### Common Issues
 
 **Access Denied Errors**
-- Run as administrator or use "Run as administrator" context menu
+- Accept the UAC prompt when the app starts
+- If you launched with `-no-elevate`, restart without it to manage services
+
+**UAC prompt does not appear**
+- Check that UAC is enabled in Windows settings
+- Run `wsm` from a normal terminal (not an already-elevated one)
 
 **Services Not Loading**  
 - Ensure Windows Service Control Manager is accessible
